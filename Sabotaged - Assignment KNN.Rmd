@@ -1,19 +1,115 @@
 ---
-title: "R Notebook"
-output: html_notebook
+title: "Assigment - kNN DIY SABOTAGED"
+author:
+  - Willem Coster - Author
+  - Ben van Vught - Reviewer
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+   html_notebook:
+    toc: true
+    toc_depth: 2
 ---
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
-
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
 
 ```{r}
-plot(cars)
+library(tidyverse)
+library(googlesheets4)
+library(class)
+library(caret)
+library(magrittr) # needs to be run every time you start R and want to use %>%
+library(dplyr)    # alternatively, this also loads %>%
 ```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+Choose a suitable dataset from [this](https://github.com/HAN-M3DM-Data-Mining/assignments/tree/master/datasets) folder and train  your own kNN model. Follow all the steps from the CRISP-DM model.
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file). 
 
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+## Business Understanding
 
+The "business" in the case is a research for HCV. The goal is to accurately guess when a blood donor has hepatitus.
+
+## Data Understanding
+
+According to the abstract given from the <a href="https://archive.ics.uci.edu/ml/datasets/HCV+data#"> Machine Learning Repository</a> the data set contains laboratory values of blood donors and Hepatitis C patients and demographic values like age.
+
+```{r}
+#Putting the given data sets in a variable
+DF <- read.csv("https://raw.githubusercontent.com/HAN-M3DM-Data-Mining/assignments/master/datasets/KNN-hcvdat0.csv")
+
+# using str() to give some basic info
+str(DF)
+```
+
+The dataset has 615 observations and 14 variables
+
+## Data Preparation
+
+Putting the given data sets in a variable
+```{r}
+#setting category to factor
+cleanDF$Category <- factor(cleanDF$Category)
+levels(cleanDF$Category) <- c("Donor", "Donor", "Hepatitis", "Hepatitis", "Hepatitis")
+
+cleanDF <- cleanDF %>% 
+    mutate(Sex = recode(Sex, 
+                      "m" = "0", 
+                      "f" = "1"))
+
+cntDiag <- table(cleanDF$Category)
+propDiag <- round(prop.table(cntDiag) * 100 , digits = 1)
+
+cntDiag
+
+propDiag
+```
+
+
+
+```{r}
+normalize <- function(x) {
+  return ((x - min(x)) / (max(x) - min(x)))
+}
+
+#replace empty values in rows for the mean of it's column
+for(i in 4:ncol(cleanDF)){
+  cleanDF[is.na(cleanDF[,i]), i] <- mean(cleanDF[,i], na.rm = TRUE)
+}
+
+#Creating normalized version of the cleaned data frame
+nCols <- dim(cleanDF)[2]
+cleanDF_n <- sapply(2:nCols,
+                    function(x) {
+  normalize(cleanDF[,x])
+}) %>% as.data.frame()
+
+summary(cleanDF_n)
+```
+
+Making training and test sets
+```{r}
+trainDF_feat <- cleanDF_n[1:469,  ]
+testDF_feat <- cleanDF_n[470:615,  ]
+
+trainDF_labels <- cleanDF[1:469,  1]
+testDF_labels <- cleanDF[470:615,  1]
+```
+
+
+## Modeling
+
+
+```{r}
+cleanDF_test_pred <- knn(train = as.matrix(trainDF_feat), test = as.matrix(testDF_feat), cl = as.matrix(trainDF_labels), k = 21)
+cleanDF_test_pred
+```
+
+
+## Evaluation and Deployment
+
+
+```{r}
+confusionMatrix(cleanDF_test_pred, testDF_labels, positive = NULL, dnn = c("Prediction", "True"))
+```
+
+As seen above the accuracy of this KNN model equals 93,5%. It P-value scores lower than 0.05.
+
+reviewer adds suggestions for improving the model

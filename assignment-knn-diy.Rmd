@@ -25,7 +25,7 @@ Choose a suitable dataset from [this](https://github.com/HAN-M3DM-Data-Mining/as
 
 ## Business Understanding
 
-The "business" in the case a research for HCV, wishes to accurately guess when a blood donor has one of three deseases: Hepatites, Fibrosis or Cirrhosis.
+The "business" in the case is a research for HCV. The goal is to accurately guess when a blood donor has hepatitus.
 
 ## Data Understanding
 

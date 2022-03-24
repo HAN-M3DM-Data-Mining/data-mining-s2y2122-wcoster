@@ -1,0 +1,166 @@
+---
+title: "Assigment - Naive Bayes DIY reviewed"
+author:
+  - name author here - Ben van Vugt
+  - name reviewer here - Willem Coster 
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_notebook:
+  toc: true
+toc_depth: 2
+---
+  
+```{r}
+library(tidyverse)
+library(tm)
+library(caret)
+library(wordcloud)
+library(e1071)
+library(cd)
+library(class)
+library(magrittr)                 #needs to run evertyime you start R and want the use %>%  symbol
+library(dplyr)
+library(RColorBrewer)
+library(corpus)
+```
+  
+  Choose a suitable dataset from [this](https://github.com/HAN-M3DM-Data-Mining/assignments/tree/master/datasets) folder and train your own Naive Bayes model. Follow all the steps from the CRISP-DM model.
+
+
+## Business Understanding
+```{r}
+#The data set contains strains of real and fake news. #To predict wheter the news is fake or not I will build a model. 
+#First I have to clean the data.
+```
+
+
+## Data Understanding
+```{r}
+url <- "https://github.com/HAN-M3DM-Data-Mining/data-mining-s2y2122-wcoster/blob/master/datasets/NB-fakenews.csv?raw=true"
+rawdata <- read.csv(url)
+```
+#Note: it takes some time to open the data set
+
+```{r}
+## Data Preparation
+rawdata <- rawdata[-1]
+rawdata <- rawdata[-1]
+rawdata <- rawdata[-1]
+
+```
+
+```{r}
+#To mutate the data from digits of 0 and 1 to the words "Fake" and "True" use the follow code
+
+rawdata <- mutate(rawdata,label = recode(label,"0" = "True","1" = "Fake"))
+
+rawdata$label <- rawdata$label %>%  factor %>% relevel("Fake")
+class(rawdata$label)
+```
+
+```{r}
+#Filter the Real and Fake data apart from each other
+Real <- rawdata %>% filter(label == "True")
+Fake <- rawdata %>% filter(label == "Fake")
+```
+
+
+```{r}
+#Show which words are often used in the articles 
+
+wordcloud(Real$text,max.words = 200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2")) 
+          
+wordcloud(Fake$text,max.words = 200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Set2"))
+```
+
+```{r}
+#Make the raw corpus 
+rawCorpus <- Corpus(VectorSource(rawdata$text))
+inspect(rawCorpus[1])
+```
+
+```{r}
+#Make all the characters lowercase
+tolower(rawCorpus) ## Reviewer note: These functions aren't possible for me to run. I tried running 500 documents in the corpus and the perfomance was still so bad that it took me 8minutes. Therefore I will continue to review based on what I know about R and the functions
+```
+
+
+```{r}
+#Remove all punctuation marks
+removePunctuation(rawCorpus)
+```
+
+```{r}
+#Remove all the numbers
+removeNumbers(rawCorpus)
+```
+
+```{r}
+#Remove excess whitespace
+stripWhitespace(rawCorpus)
+
+```
+
+```{r}
+#Remove the stopwords
+removestopwords(rawCorpus)
+```
+
+```{r}
+#Create Document Term Matrix to count all the words
+#Will take some time to load
+cleanDTM <- rawCorpus %>% DocumentTermMatrix()
+inspect(cleanDTM)
+```
+
+```{r}
+#Insert the random numer generator (RNG)
+set.seed(123)
+```
+
+```{r}
+DataPartion <- createDataPartition(rawdata$label, p=99, list = FALSE, times = 1)
+head(DataPartion)
+```
+
+```{r}
+trainCorpus <- cleancorpus[trainIndex] #trainIndex is never defined so is cleancorpus. I do not know what to expect from this code. And I suppose this code does not know what to do either.
+testCorpus <- cleancorpus[-trainIndex]
+trainDTM <- cleanDTM2[trainIndex, ]
+testDTM <- cleanDTM2[-trainIndex, ]
+```
+
+```{r}
+#Creating a matrix with the words
+convert_counts <- function(x) {
+  x <- ifelse(x > 0, 1, 0) %>% factor(levels = c(0,1), labels = c("no", "yes"))
+}
+```
+
+```{r}
+
+# This looks OK
+
+nColsDTM <- dim(trainDTM)[2]
+trainDTM <- apply(trainDTM, MARGIN = 2, convert_counts)
+testDTM <- apply(testDTM, MARGIN = 2, convert_counts)
+
+head(trainDTM[,1:10])
+```
+
+```{r}
+#Making a model 
+nbayesModel <-  naiveBayes(trainDTM, trainDF$text, laplace = 1) # $text is used should be $label
+predVec <- predict(nbayesModel, testDTM)
+confusionMatrix(predVec, testDF$label, positive = "1", dnn = c("Prediction", "True"))
+```
+
+## Evaluation and Deployment
+
+In the first R-code section there were install.packages() packages. Once installed it is not useful to re-install the packages over and over.
+
+the url used to retrieve the data was from the github directory of Eilis Lepretre. Not sure why, I changed it to mine. When using a file from someone else's directory you might end up not retrieving the data at all since this person could easily delete or alter it. Leaving you with a compromised code.
+
+This code is seems ok, except from the undefined variables cleancorpus and trainindex. I suspect that these variables were defined in the authors R-studio before. But then deleted the source code for these variables.
